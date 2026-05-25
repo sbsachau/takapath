@@ -2,8 +2,10 @@
 /**
  * TakaPath Child Theme — functions.php
  * Enqueues parent (GeneratePress) styles then child styles.
+ * Conditionally loads home-extra.css on the homepage only.
  * Loads ACF field group definitions from /acf/.
  * Adds Bengali language support, SEO helpers, and schema markup.
+ * Registers the "TakaPath Homepage" page template.
  */
 
 declare( strict_types=1 );
@@ -16,18 +18,60 @@ if ( ! defined( 'ABSPATH' ) ) {
 // ENQUEUE STYLESHEETS
 // =============================================================================
 add_action( 'wp_enqueue_scripts', function () {
+
+	// 1. Parent theme (GeneratePress)
 	wp_enqueue_style(
 		'generatepress-style',
 		get_template_directory_uri() . '/style.css',
 		[],
 		wp_get_theme( 'generatepress' )->get( 'Version' )
 	);
+
+	// 2. TakaPath child — global tokens + brand styles
 	wp_enqueue_style(
 		'takapath-child-style',
 		get_stylesheet_uri(),
 		[ 'generatepress-style' ],
 		wp_get_theme()->get( 'Version' )
 	);
+
+	// 3. Homepage extra — steps, bilingual block, stats strip, footer CTA
+	//    Loaded only on the homepage (static front page or is_front_page()).
+	if ( is_front_page() || is_home() ) {
+		wp_enqueue_style(
+			'takapath-home-extra',
+			get_stylesheet_directory_uri() . '/home-extra.css',
+			[ 'takapath-child-style' ],
+			wp_get_theme()->get( 'Version' )
+		);
+	}
+} );
+
+
+// =============================================================================
+// PAGE TEMPLATE — "TakaPath Homepage"
+// Registers page-home.php as a selectable template in
+// WP Admin → Pages → Page Attributes → Template.
+// WordPress discovers it automatically from the Template Name comment inside
+// page-home.php — this filter adds it to the theme's template list so it
+// always appears even before a page using it is saved.
+// =============================================================================
+add_filter( 'theme_page_templates', function ( array $templates ): array {
+	$templates['page-home.php'] = __( 'TakaPath Homepage', 'takapath-child' );
+	return $templates;
+} );
+
+// Resolve the physical path for the custom template file.
+add_filter( 'template_include', function ( string $template ): string {
+	if ( ! is_page() ) {
+		return $template;
+	}
+	$page_template = get_post_meta( get_the_ID(), '_wp_page_template', true );
+	if ( 'page-home.php' !== $page_template ) {
+		return $template;
+	}
+	$custom = get_stylesheet_directory() . '/page-home.php';
+	return file_exists( $custom ) ? $custom : $template;
 } );
 
 
