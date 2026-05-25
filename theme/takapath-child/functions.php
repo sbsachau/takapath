@@ -4,6 +4,7 @@
  * Enqueues parent (GeneratePress) styles then child styles.
  * Conditionally loads home-extra.css on the homepage only.
  * Conditionally loads corridor-extra.css on single corridor pages only.
+ * Conditionally loads archive-extra.css on the corridor archive page only.
  * Loads ACF field group definitions from /acf/.
  * Adds Bengali language support, SEO helpers, and schema markup.
  * Registers the "TakaPath Homepage" page template.
@@ -55,13 +56,21 @@ add_action( 'wp_enqueue_scripts', function () {
 			wp_get_theme()->get( 'Version' )
 		);
 	}
+
+	// 5. Archive (corridor listing) extra — breadcrumb, filter bar, empty state, pagination
+	if ( is_post_type_archive( 'corridor' ) ) {
+		wp_enqueue_style(
+			'takapath-archive-extra',
+			get_stylesheet_directory_uri() . '/archive-extra.css',
+			[ 'takapath-child-style' ],
+			wp_get_theme()->get( 'Version' )
+		);
+	}
 } );
 
 
 // =============================================================================
 // PAGE TEMPLATE — "TakaPath Homepage"
-// Registers page-home.php as a selectable template in
-// WP Admin → Pages → Page Attributes → Template.
 // =============================================================================
 add_filter( 'theme_page_templates', function ( array $templates ): array {
 	$templates['page-home.php'] = __( 'TakaPath Homepage', 'takapath-child' );
