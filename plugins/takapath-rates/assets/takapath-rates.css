@@ -1,0 +1,192 @@
+/**
+ * TakaPath Rates Widget — Frontend Styles
+ * Standalone CSS; works without any theme dependency.
+ * Design: warm neutral palette, teal accent (#01696f) matching TakaPath brand.
+ */
+
+.takapath-widget {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-size: 15px;
+  line-height: 1.5;
+  color: #28251d;
+  background: #f9f8f5;
+  border: 1px solid #dcd9d5;
+  border-radius: 10px;
+  overflow: hidden;
+  margin-block: 1.5rem;
+}
+
+/* Header */
+.takapath-widget__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.875rem 1.25rem;
+  background: #01696f;
+  color: #fff;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.takapath-widget__label {
+  font-weight: 600;
+  font-size: 0.9375rem;
+}
+
+.takapath-widget__updated {
+  font-size: 0.75rem;
+  opacity: 0.85;
+}
+
+/* Table */
+.takapath-table {
+  width: 100%;
+  border-collapse: collapse;
+  background: #fff;
+}
+
+.takapath-table thead tr {
+  background: #f3f0ec;
+  border-bottom: 1px solid #dcd9d5;
+}
+
+.takapath-table th {
+  padding: 0.625rem 1rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: #7a7974;
+  text-align: left;
+  white-space: nowrap;
+}
+
+.takapath-table td {
+  padding: 0.75rem 1rem;
+  border-bottom: 1px solid #edeae5;
+  font-size: 0.9375rem;
+  vertical-align: middle;
+}
+
+.takapath-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.takapath-table tbody tr:hover {
+  background: #f7f6f2;
+}
+
+/* Best rate row */
+.takapath-table__row--best {
+  background: #f0f8f8 !important;
+}
+
+.takapath-table__row--best td:first-child {
+  border-left: 3px solid #01696f;
+  padding-left: calc(1rem - 3px);
+}
+
+/* Recipient amount — make it stand out */
+.takapath-table__amount {
+  font-weight: 700;
+  font-size: 1rem;
+  color: #0c4e54;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Provider name cell */
+.takapath-table__provider {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+/* Best rate badge */
+.takapath-badge {
+  display: inline-block;
+  padding: 0.125rem 0.5rem;
+  background: #cedcd8;
+  color: #0f3638;
+  font-size: 0.6875rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  border-radius: 9999px;
+  width: fit-content;
+}
+
+/* CTA Button */
+.takapath-btn {
+  display: inline-block;
+  padding: 0.4375rem 1rem;
+  background: #01696f;
+  color: #fff !important;
+  font-size: 0.875rem;
+  font-weight: 600;
+  text-decoration: none;
+  border-radius: 6px;
+  white-space: nowrap;
+  transition: background 160ms ease;
+}
+
+.takapath-btn:hover {
+  background: #0c4e54;
+  color: #fff !important;
+  text-decoration: none;
+}
+
+/* Disclaimer */
+.takapath-widget__disclaimer {
+  padding: 0.625rem 1.25rem;
+  font-size: 0.75rem;
+  color: #7a7974;
+  background: #f3f0ec;
+  border-top: 1px solid #dcd9d5;
+  margin: 0;
+}
+
+/* Error state */
+.takapath-error {
+  padding: 1rem 1.25rem;
+  color: #a12c7b;
+  background: #e0ced7;
+  border-radius: 6px;
+  font-size: 0.9375rem;
+}
+
+/* Screen reader only utility */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border-width: 0;
+}
+
+/* ── Responsive ────────────────────────────────────────────────── */
+@media (max-width: 640px) {
+  .takapath-table {
+    display: block;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .takapath-table th,
+  .takapath-table td {
+    padding: 0.625rem 0.75rem;
+    font-size: 0.875rem;
+  }
+
+  .takapath-table__amount {
+    font-size: 0.9375rem;
+  }
+
+  .takapath-widget__header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+}
