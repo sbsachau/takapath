@@ -3,6 +3,7 @@
  * TakaPath Child Theme — functions.php
  * Enqueues parent (GeneratePress) styles then child styles.
  * Conditionally loads home-extra.css on the homepage only.
+ * Conditionally loads corridor-extra.css on single corridor pages only.
  * Loads ACF field group definitions from /acf/.
  * Adds Bengali language support, SEO helpers, and schema markup.
  * Registers the "TakaPath Homepage" page template.
@@ -36,11 +37,20 @@ add_action( 'wp_enqueue_scripts', function () {
 	);
 
 	// 3. Homepage extra — steps, bilingual block, stats strip, footer CTA
-	//    Loaded only on the homepage (static front page or is_front_page()).
 	if ( is_front_page() || is_home() ) {
 		wp_enqueue_style(
 			'takapath-home-extra',
 			get_stylesheet_directory_uri() . '/home-extra.css',
+			[ 'takapath-child-style' ],
+			wp_get_theme()->get( 'Version' )
+		);
+	}
+
+	// 4. Corridor page extra — intro, comparison, pills, expert tip, FAQ, related
+	if ( is_singular( 'corridor' ) ) {
+		wp_enqueue_style(
+			'takapath-corridor-extra',
+			get_stylesheet_directory_uri() . '/corridor-extra.css',
 			[ 'takapath-child-style' ],
 			wp_get_theme()->get( 'Version' )
 		);
@@ -52,16 +62,12 @@ add_action( 'wp_enqueue_scripts', function () {
 // PAGE TEMPLATE — "TakaPath Homepage"
 // Registers page-home.php as a selectable template in
 // WP Admin → Pages → Page Attributes → Template.
-// WordPress discovers it automatically from the Template Name comment inside
-// page-home.php — this filter adds it to the theme's template list so it
-// always appears even before a page using it is saved.
 // =============================================================================
 add_filter( 'theme_page_templates', function ( array $templates ): array {
 	$templates['page-home.php'] = __( 'TakaPath Homepage', 'takapath-child' );
 	return $templates;
 } );
 
-// Resolve the physical path for the custom template file.
 add_filter( 'template_include', function ( string $template ): string {
 	if ( ! is_page() ) {
 		return $template;
@@ -77,8 +83,6 @@ add_filter( 'template_include', function ( string $template ): string {
 
 // =============================================================================
 // ACF FIELD GROUPS — load from version-controlled PHP export
-// Fires on 'acf/include_fields' (ACF Pro 6+) so fields register before
-// any post-meta is read, regardless of plugin load order.
 // =============================================================================
 add_action( 'acf/include_fields', function () {
 	$field_file = get_stylesheet_directory() . '/../../acf/corridor-fields.php';
@@ -90,8 +94,6 @@ add_action( 'acf/include_fields', function () {
 
 // =============================================================================
 // RANK MATH SEO — corridor page overrides
-// ACF fields seo_title / seo_description / canonical_url override
-// the auto-generated values when they are non-empty.
 // =============================================================================
 add_filter( 'rank_math/title', function ( string $title ): string {
 	if ( ! is_singular( 'corridor' ) ) {
@@ -135,7 +137,7 @@ add_action( 'init', function () {
 // =============================================================================
 add_action( 'wp_head', function () {
 	if ( function_exists( 'pll_the_languages' ) ) {
-		return; // Polylang handles it.
+		return;
 	}
 	echo '<link rel="alternate" hreflang="en" href="' . esc_url( home_url() ) . '" />' . "\n";
 	echo '<link rel="alternate" hreflang="bn" href="' . esc_url( home_url( '/bn/' ) ) . '" />' . "\n";
@@ -174,7 +176,6 @@ add_action( 'wp_head', function () {
 		return;
 	}
 
-	// BreadcrumbList
 	$breadcrumb = [
 		'@context'        => 'https://schema.org',
 		'@type'           => 'BreadcrumbList',
@@ -186,7 +187,6 @@ add_action( 'wp_head', function () {
 	];
 	echo '<script type="application/ld+json">' . wp_json_encode( $breadcrumb, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES ) . '</script>' . "\n";
 
-	// FAQPage schema — built from ACF faq_items repeater
 	$faq_items = get_field( 'faq_items' );
 	if ( ! empty( $faq_items ) && is_array( $faq_items ) ) {
 		$entities = [];
@@ -217,7 +217,6 @@ add_action( 'wp_head', function () {
 
 // =============================================================================
 // HELPER — get corridor shortcode string for use in templates
-// Returns e.g. '[takapath_rates from="GBP" amount="1000" selector="yes"]'
 // =============================================================================
 function takapath_corridor_shortcode( int $post_id = 0 ): string {
 	if ( ! $post_id ) {
