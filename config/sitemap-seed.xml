@@ -1,0 +1,107 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  TakaPath — Static sitemap SEED
+  This is a reference sitemap for pre-submission to Google Search Console
+  BEFORE WordPress / Rank Math generates the live dynamic sitemap.
+
+  Once WordPress + Rank Math is live, use the dynamic sitemap at:
+    https://takapath.com/sitemap_index.xml
+
+  Submit THAT URL to Google Search Console, not this file.
+  This file is for reference and initial crawl priming only.
+-->
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
+        xmlns:xhtml="http://www.w3.org/1999/xhtml">
+
+  <!-- ========== HOMEPAGE ========== -->
+  <url>
+    <loc>https://takapath.com/</loc>
+    <lastmod>2026-05-26</lastmod>
+    <changefreq>hourly</changefreq>
+    <priority>1.0</priority>
+    <xhtml:link rel="alternate" hreflang="en" href="https://takapath.com/"/>
+  </url>
+
+  <!-- ========== TRUST PAGES ========== -->
+  <url>
+    <loc>https://takapath.com/about/</loc>
+    <lastmod>2026-05-26</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://takapath.com/how-we-work/</loc>
+    <lastmod>2026-05-26</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+
+  <!-- ========== CORRIDOR ARCHIVE ========== -->
+  <url>
+    <loc>https://takapath.com/send-money-to-bangladesh/</loc>
+    <lastmod>2026-05-26</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.9</priority>
+  </url>
+
+  <!-- ========== CORRIDOR PAGES (Priority 1: highest volume corridors) ========== -->
+  <url>
+    <loc>https://takapath.com/send-money-to-bangladesh/saudi-arabia-to-bangladesh/</loc>
+    <lastmod>2026-05-26</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.95</priority>
+  </url>
+  <url>
+    <loc>https://takapath.com/send-money-to-bangladesh/uae-to-bangladesh/</loc>
+    <lastmod>2026-05-26</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.95</priority>
+  </url>
+  <url>
+    <loc>https://takapath.com/send-money-to-bangladesh/uk-to-bangladesh/</loc>
+    <lastmod>2026-05-26</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.9</priority>
+  </url>
+  <url>
+    <loc>https://takapath.com/send-money-to-bangladesh/malaysia-to-bangladesh/</loc>
+    <lastmod>2026-05-26</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.9</priority>
+  </url>
+  <url>
+    <loc>https://takapath.com/send-money-to-bangladesh/usa-to-bangladesh/</loc>
+    <lastmod>2026-05-26</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.9</priority>
+  </url>
+
+  <!-- ========== CORRIDOR PAGES (Priority 2) ========== -->
+  <url>
+    <loc>https://takapath.com/send-money-to-bangladesh/oman-to-bangladesh/</loc>
+    <lastmod>2026-05-26</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.85</priority>
+  </url>
+  <url>
+    <loc>https://takapath.com/send-money-to-bangladesh/italy-to-bangladesh/</loc>
+    <lastmod>2026-05-26</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.85</priority>
+  </url>
+  <url>
+    <loc>https://takapath.com/send-money-to-bangladesh/kuwait-to-bangladesh/</loc>
+    <lastmod>2026-05-26</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.85</priority>
+  </url>
+
+  <!-- ========== GUIDES ========== -->
+  <url>
+    <loc>https://takapath.com/bkash-receive-money-abroad/</loc>
+    <lastmod>2026-05-26</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+  </url>
+
+</urlset>

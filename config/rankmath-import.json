@@ -1,0 +1,138 @@
+{
+  "_comment": "Rank Math SEO — TakaPath import settings. Import via: Rank Math > Status & Tools > Import & Export > Import JSON.",
+  "version": "1.0.18",
+  "general": {
+    "knowledgegraph_type": "organization",
+    "knowledgegraph_name": "TakaPath",
+    "url": "https://takapath.com",
+    "email": "hello@takapath.com",
+    "social_url_twitter": "https://twitter.com/takapath",
+    "local_seo": "0",
+    "breadcrumbs": "1",
+    "breadcrumbs_separator": "›",
+    "breadcrumbs_home_label": "Home",
+    "breadcrumbs_404_label": "404 — Page Not Found",
+    "breadcrumbs_ancestor_categories": "0",
+    "noindex_empty_taxonomies": "1",
+    "noindex_archive_subpages": "1",
+    "canonical_url": "1",
+    "redirect_attachments": "1",
+    "noindex_password_protected": "1",
+    "strip_category_base": "0",
+    "enable_auto_update": "1"
+  },
+  "titles": {
+    "_comment": "Title format uses %%title%% %%sep%% %%sitename%% pattern.",
+    "homepage_title": "TakaPath – Compare Best Ways to Send Money to Bangladesh",
+    "homepage_description": "Compare exchange rates, fees and transfer speeds from Wise, Remitly, Western Union and more. Find the best way to send money to Bangladesh today — bank, bKash or cash pickup.",
+    "title_separator": "–",
+    "noindex_search": "1",
+    "noindex_paginated_pages": "0",
+    "pt_post_title": "%%title%% – %%sitename%%",
+    "pt_post_description": "%%excerpt%%",
+    "pt_page_title": "%%title%% – TakaPath",
+    "pt_page_description": "%%excerpt%%",
+    "pt_corridor_title": "Send Money from %%cf_from_country%% to Bangladesh – Compare %%cf_from_currency%%/BDT Rates | TakaPath",
+    "pt_corridor_description": "Compare live %%cf_from_currency%% to BDT exchange rates, transfer fees and speeds. Find the best way to send money from %%cf_from_country%% to Bangladesh — bank deposit, bKash or cash pickup.",
+    "pt_corridor_robots": "index, follow",
+    "tax_category_title": "%%term_title%% – TakaPath",
+    "tax_category_description": "%%term_description%%",
+    "tax_post_tag_robots": "noindex, follow",
+    "pt_attachment_robots": "noindex, follow"
+  },
+  "sitemap": {
+    "items_per_page": "200",
+    "include_images": "1",
+    "pt_post_sitemap": "1",
+    "pt_page_sitemap": "1",
+    "pt_corridor_sitemap": "1",
+    "tax_category_sitemap": "0",
+    "tax_post_tag_sitemap": "0",
+    "exclude_posts": "",
+    "sitemap_ping_google": "1",
+    "sitemap_ping_bing": "1",
+    "news_sitemap_enable": "0",
+    "video_sitemap_enable": "0"
+  },
+  "schema": {
+    "default_rich_snippet": "article",
+    "default_article_type": "Article",
+    "pt_corridor_default_rich_snippet": "webpage",
+    "pt_page_default_rich_snippet": "webpage",
+    "rich_snippet_pt_post": "article",
+    "rich_snippet_pt_page": "webpage",
+    "rich_snippet_pt_corridor": "webpage"
+  },
+  "redirections": {
+    "fallback_behavior": "default",
+    "redirections_debug": "0"
+  },
+  "page_specific": {
+    "_comment": "These must be applied manually per-page in WP Admin > Page > Rank Math meta box, as JSON import does not set per-post meta.",
+    "pages": [
+      {
+        "slug": "/",
+        "rank_math_title": "TakaPath – Compare Best Ways to Send Money to Bangladesh",
+        "rank_math_description": "Compare exchange rates, fees and transfer speeds from Wise, Remitly, Western Union and more. Find the best way to send money to Bangladesh today — bank, bKash or cash pickup.",
+        "rank_math_focus_keyword": "best way to send money to Bangladesh",
+        "rank_math_robots": ["index", "follow"]
+      },
+      {
+        "slug": "/about",
+        "rank_math_title": "About TakaPath – Independent Bangladesh Remittance Comparison",
+        "rank_math_description": "TakaPath is an independent comparison service for Bangladesh remittances. Learn about our methodology, editorial policy and how we keep our data honest.",
+        "rank_math_focus_keyword": "about TakaPath",
+        "rank_math_robots": ["index", "follow"]
+      },
+      {
+        "slug": "/how-we-work",
+        "rank_math_title": "How TakaPath Works – Our Rate Methodology | TakaPath",
+        "rank_math_description": "Full transparency on how TakaPath collects exchange rate data, ranks providers by best recipient amount, and keeps comparisons honest. No paid placement.",
+        "rank_math_focus_keyword": "how TakaPath works",
+        "rank_math_robots": ["index", "follow"]
+      },
+      {
+        "slug": "/bkash-receive-money-abroad",
+        "rank_math_title": "How to Receive Money on bKash from Abroad – Step by Step | TakaPath",
+        "rank_math_description": "Step-by-step guide to receiving international remittances on bKash. Covers HomeSend, supported providers, limits and fees. Updated 2026.",
+        "rank_math_focus_keyword": "receive money on bKash from abroad",
+        "rank_math_robots": ["index", "follow"]
+      },
+      {
+        "slug": "/send-money-to-bangladesh/uk-to-bangladesh",
+        "rank_math_title": "Send Money from UK to Bangladesh – Compare GBP to BDT Rates | TakaPath",
+        "rank_math_description": "Compare live GBP to BDT exchange rates and fees. Find the best way to send money from the UK to Bangladesh — bank deposit, bKash or cash pickup.",
+        "rank_math_focus_keyword": "send money from UK to Bangladesh",
+        "rank_math_robots": ["index", "follow"]
+      },
+      {
+        "slug": "/send-money-to-bangladesh/usa-to-bangladesh",
+        "rank_math_title": "Send Money from USA to Bangladesh – Compare USD to BDT Rates | TakaPath",
+        "rank_math_description": "Compare live USD to BDT exchange rates and fees. Find the cheapest way to send money from the USA to Bangladesh today.",
+        "rank_math_focus_keyword": "send money from USA to Bangladesh",
+        "rank_math_robots": ["index", "follow"]
+      },
+      {
+        "slug": "/send-money-to-bangladesh/saudi-arabia-to-bangladesh",
+        "rank_math_title": "Send Money from Saudi Arabia to Bangladesh – SAR to BDT Rates | TakaPath",
+        "rank_math_description": "Compare live SAR to BDT rates and fees from Wise, Western Union, Al Rajhi and more. Best way to send money from Saudi Arabia to Bangladesh.",
+        "rank_math_focus_keyword": "send money from Saudi Arabia to Bangladesh",
+        "rank_math_robots": ["index", "follow"]
+      },
+      {
+        "slug": "/send-money-to-bangladesh/uae-to-bangladesh",
+        "rank_math_title": "Send Money from UAE to Bangladesh – Compare AED to BDT Rates | TakaPath",
+        "rank_math_description": "Compare live AED to BDT exchange rates and fees. Find the best way to send money from the UAE to Bangladesh — bank, bKash or cash pickup.",
+        "rank_math_focus_keyword": "send money from UAE to Bangladesh",
+        "rank_math_robots": ["index", "follow"]
+      },
+      {
+        "slug": "/send-money-to-bangladesh/malaysia-to-bangladesh",
+        "rank_math_title": "Send Money from Malaysia to Bangladesh – MYR to BDT Rates | TakaPath",
+        "rank_math_description": "Compare live MYR to BDT exchange rates and fees from all major providers. Best remittance rates from Malaysia to Bangladesh.",
+        "rank_math_focus_keyword": "send money from Malaysia to Bangladesh",
+        "rank_math_robots": ["index", "follow"]
+      }
+    ]
+  }
+}
