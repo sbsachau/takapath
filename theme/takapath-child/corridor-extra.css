@@ -1,14 +1,66 @@
 /**
  * TakaPath — Corridor page extra styles
  * Loaded only on single corridor pages (is_singular('corridor')).
- * Covers: intro block, comparison wrapper, receive methods pills,
- *         expert tip callout, FAQ accordion, related corridors grid.
+ * Covers: breadcrumb nav, intro block, comparison wrapper, receive methods pills,
+ *         expert tip callout, section divider, FAQ accordion, related corridors grid.
  *
  * Global tokens (--color-*, --space-*, --text-*, --radius-*)
  * are defined in style.css and are always available.
  */
 
-/* ── Corridor intro text ──────────────────────────────────────────────────── */
+/* ── Breadcrumb nav ─────────────────────────────────────────────────────────── */
+.breadcrumb-nav {
+  padding: var(--space-4) var(--space-6);
+  background: var(--color-surface);
+  border-bottom: 1px solid var(--color-divider);
+}
+
+.breadcrumb-list {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  max-width: var(--content-wide);
+  margin-inline: auto;
+  font-size: var(--text-sm);
+  color: var(--color-text-muted);
+}
+
+.breadcrumb-list__item a {
+  color: var(--color-text-muted);
+  text-decoration: none;
+  transition: color var(--transition-interactive);
+}
+
+.breadcrumb-list__item a:hover,
+.breadcrumb-list__item a:focus-visible {
+  color: var(--color-primary);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.breadcrumb-list__item--sep {
+  color: var(--color-text-faint);
+  user-select: none;
+}
+
+.breadcrumb-list__item--current {
+  color: var(--color-text);
+  font-weight: 500;
+}
+
+/* ── Section divider ────────────────────────────────────────────────────────── */
+/* Fix #5: .section-divider was referenced in the template but had no CSS rule. */
+.section-divider {
+  border: none;
+  border-top: 1px solid var(--color-divider);
+  margin-block: var(--space-12);
+}
+
+/* ── Corridor intro text ────────────────────────────────────────────────────── */
 .corridor-intro {
   margin-bottom: var(--space-8);
   font-size: var(--text-base);
@@ -19,7 +71,7 @@
 .corridor-intro p { margin-bottom: var(--space-4); }
 .corridor-intro p:last-child { margin-bottom: 0; }
 
-/* ── Comparison widget wrapper ────────────────────────────────────────────── */
+/* ── Comparison widget wrapper ──────────────────────────────────────────────── */
 .corridor-comparison {
   margin-bottom: var(--space-8);
 }
@@ -29,7 +81,7 @@
   margin-bottom: var(--space-6);
 }
 
-/* ── Receive methods pills ────────────────────────────────────────────────── */
+/* ── Receive methods pills ──────────────────────────────────────────────────── */
 .receive-methods {
   display: flex;
   flex-wrap: wrap;
@@ -51,6 +103,12 @@
   white-space: nowrap;
 }
 
+/* Size inline SVG icons correctly inside pills */
+.receive-methods__pill svg {
+  flex-shrink: 0;
+  color: inherit;
+}
+
 .receive-methods__pill--green {
   background: color-mix(in oklch, var(--color-primary) 10%, var(--color-surface));
   border-color: color-mix(in oklch, var(--color-primary) 30%, var(--color-border));
@@ -58,7 +116,7 @@
   font-weight: 500;
 }
 
-/* ── Expert tip callout ───────────────────────────────────────────────────── */
+/* ── Expert tip callout ─────────────────────────────────────────────────────── */
 .expert-tip {
   display: flex;
   gap: var(--space-4);
@@ -71,9 +129,12 @@
 }
 
 .expert-tip__icon {
-  font-size: 1.4rem;
-  line-height: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   flex-shrink: 0;
+  width: 20px;
+  color: var(--color-gold);
   margin-top: 2px;
 }
 
@@ -84,7 +145,7 @@
   max-width: 72ch;
 }
 
-/* ── FAQ accordion ─────────────────────────────────────────────────────────── */
+/* ── FAQ accordion ──────────────────────────────────────────────────────────── */
 .faq-list {
   list-style: none;
   padding: 0;
@@ -153,7 +214,7 @@
   grid-template-rows: 1fr;
 }
 
-/* ── Related corridors grid ──────────────────────────────────────────────────── */
+/* ── Related corridors grid ─────────────────────────────────────────────────── */
 .related-corridors {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(min(220px, 100%), 1fr));
@@ -231,9 +292,10 @@
 
 .wp-content a:hover { color: var(--color-primary-hover); }
 
-/* ── Mobile adjustments ───────────────────────────────────────────────────────── */
+/* ── Mobile adjustments ─────────────────────────────────────────────────────── */
 @media (max-width: 480px) {
-  .expert-tip   { flex-direction: column; gap: var(--space-2); }
+  .breadcrumb-nav    { padding: var(--space-3) var(--space-4); }
+  .expert-tip        { flex-direction: column; gap: var(--space-2); }
   .related-corridors { grid-template-columns: 1fr 1fr; }
   .faq-item__trigger { font-size: var(--text-sm); }
 }

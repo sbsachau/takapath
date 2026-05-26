@@ -8,13 +8,20 @@
  *   2. Trust bar  — three trust signals
  *   3. Intro text — ACF wysiwyg (optional)
  *   4. Rate comparison widget — [takapath_rates] shortcode
- *   5. Receive methods pills
+ *   5. Receive methods pills (SVG icons)
  *   6. Expert tip callout
  *   7. Section divider
  *   8. FAQ accordion (ACF repeater)
  *   9. Related corridors grid
  *  10. Standard WP editor content (optional editorial body)
  *  11. Footer
+ *
+ * Fixes applied 2026-05-26:
+ *   - Replace undefined takapath_corridor_shortcode() with inline shortcode string
+ *   - Add FAQPage JSON-LD schema block
+ *   - Add visible breadcrumb nav + BreadcrumbList schema
+ *   - Replace emoji receive-method labels with inline SVG icons
+ *   - Replace emoji expert-tip icon with SVG
  */
 
 declare( strict_types=1 );
@@ -41,17 +48,99 @@ while ( have_posts() ) :
 	$faq_items       = (array)  ( get_field( 'faq_items' )       ?: [] );
 	$related_ids     = (array)  ( get_field( 'related_corridors' ) ?: [] );
 
-	// Receive method labels
-	$method_labels = [
-		'bank_deposit'  => '🏦 Bank deposit',
-		'bkash'         => '📱 bKash',
-		'nagad'         => '📱 Nagad',
-		'rocket'        => '📱 Rocket',
-		'cash_pickup'   => '💵 Cash pickup',
-		'home_delivery' => '🏠 Home delivery',
+	// ── Receive method config (label + inline SVG icon) ───────────────────────
+	$method_config = [
+		'bank_deposit'  => [
+			'label' => __( 'Bank deposit', 'takapath-child' ),
+			'icon'  => '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V9z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>',
+		],
+		'bkash'         => [
+			'label' => __( 'bKash', 'takapath-child' ),
+			'icon'  => '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="5" y="2" width="14" height="20" rx="2" ry="2"/><line x1="12" y1="18" x2="12.01" y2="18"/></svg>',
+		],
+		'nagad'         => [
+			'label' => __( 'Nagad', 'takapath-child' ),
+			'icon'  => '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="5" y="2" width="14" height="20" rx="2" ry="2"/><line x1="12" y1="18" x2="12.01" y2="18"/></svg>',
+		],
+		'rocket'        => [
+			'label' => __( 'Rocket', 'takapath-child' ),
+			'icon'  => '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="5" y="2" width="14" height="20" rx="2" ry="2"/><line x1="12" y1="18" x2="12.01" y2="18"/></svg>',
+		],
+		'cash_pickup'   => [
+			'label' => __( 'Cash pickup', 'takapath-child' ),
+			'icon'  => '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="2" y="7" width="20" height="14" rx="2" ry="2"/><path d="M16 7V5a2 2 0 0 0-4 0v2"/><line x1="12" y1="12" x2="12" y2="16"/><line x1="10" y1="14" x2="14" y2="14"/></svg>',
+		],
+		'home_delivery' => [
+			'label' => __( 'Home delivery', 'takapath-child' ),
+			'icon'  => '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M1 3h15v13H1z"/><path d="M16 8h4l3 3v5h-7V8z"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>',
+		],
 	];
 
+	// ── FAQ JSON-LD (FAQPage schema) — emitted only when FAQ items exist ───────
+	if ( ! empty( $faq_items ) ) :
+		$faq_schema = [
+			'@context'   => 'https://schema.org',
+			'@type'      => 'FAQPage',
+			'mainEntity' => [],
+		];
+		foreach ( $faq_items as $item ) :
+			if ( ! empty( $item['question'] ) && ! empty( $item['answer'] ) ) :
+				$faq_schema['mainEntity'][] = [
+					'@type'          => 'Question',
+					'name'           => wp_strip_all_tags( $item['question'] ),
+					'acceptedAnswer' => [
+						'@type' => 'Answer',
+						'text'  => wp_strip_all_tags( $item['answer'] ),
+					],
+				];
+			endif;
+		endforeach;
+		echo '<script type="application/ld+json">' . wp_json_encode( $faq_schema, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES ) . '</script>' . "\n";
+	endif;
+
+	// ── BreadcrumbList schema ─────────────────────────────────────────────────
+	$breadcrumb_schema = [
+		'@context'        => 'https://schema.org',
+		'@type'           => 'BreadcrumbList',
+		'itemListElement' => [
+			[
+				'@type'    => 'ListItem',
+				'position' => 1,
+				'name'     => __( 'Home', 'takapath-child' ),
+				'item'     => home_url( '/' ),
+			],
+			[
+				'@type'    => 'ListItem',
+				'position' => 2,
+				'name'     => __( 'Send Money to Bangladesh', 'takapath-child' ),
+				'item'     => home_url( '/send-money-to-bangladesh/' ),
+			],
+			[
+				'@type'    => 'ListItem',
+				'position' => 3,
+				'name'     => get_the_title(),
+				'item'     => get_permalink(),
+			],
+		],
+	];
+	echo '<script type="application/ld+json">' . wp_json_encode( $breadcrumb_schema, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES ) . '</script>' . "\n";
+
 ?>
+
+<!-- ══════════════════════════════════════════════ BREADCRUMB NAV ═══ -->
+<nav class="breadcrumb-nav" aria-label="<?php esc_attr_e( 'Breadcrumb', 'takapath-child' ); ?>">
+	<ol class="breadcrumb-list" role="list">
+		<li class="breadcrumb-list__item">
+			<a href="<?php echo esc_url( home_url( '/' ) ); ?>"><?php esc_html_e( 'Home', 'takapath-child' ); ?></a>
+		</li>
+		<li class="breadcrumb-list__item breadcrumb-list__item--sep" aria-hidden="true">/</li>
+		<li class="breadcrumb-list__item">
+			<a href="<?php echo esc_url( home_url( '/send-money-to-bangladesh/' ) ); ?>"><?php esc_html_e( 'Send Money to Bangladesh', 'takapath-child' ); ?></a>
+		</li>
+		<li class="breadcrumb-list__item breadcrumb-list__item--sep" aria-hidden="true">/</li>
+		<li class="breadcrumb-list__item breadcrumb-list__item--current" aria-current="page"><?php the_title(); ?></li>
+	</ol>
+</nav>
 
 <!-- ═══════════════════════════════════════════════════════ 1. HERO ═══ -->
 <section class="takapath-hero" aria-label="Corridor hero">
@@ -123,9 +212,14 @@ while ( have_posts() ) :
 			?>
 		</h2>
 		<?php
-		echo do_shortcode(
-			takapath_corridor_shortcode( get_the_ID() )
+		// Fix #1: build shortcode string directly from ACF fields.
+		// The previously-called takapath_corridor_shortcode() was never defined.
+		$shortcode = sprintf(
+			'[takapath_rates from="%s" amount="%d"]',
+			esc_attr( $from_currency ),
+			(int) $default_amount
 		);
+		echo do_shortcode( $shortcode );
 		?>
 	</div>
 
@@ -133,9 +227,17 @@ while ( have_posts() ) :
 	<?php if ( ! empty( $receive_methods ) ) : ?>
 		<div class="receive-methods" aria-label="Available receive methods">
 			<span class="receive-methods__pill" style="font-weight:600; color: var(--color-text);"><?php esc_html_e( 'Receive via:', 'takapath-child' ); ?></span>
-			<?php foreach ( $receive_methods as $method ) : ?>
+			<?php foreach ( $receive_methods as $method ) :
+				$cfg   = $method_config[ $method ] ?? null;
+				$label = $cfg ? $cfg['label'] : $method;
+				$icon  = $cfg ? $cfg['icon']  : '';
+			?>
 				<span class="receive-methods__pill receive-methods__pill--green">
-					<?php echo esc_html( $method_labels[ $method ] ?? $method ); ?>
+					<?php
+					// Icon is a hardcoded SVG string — safe to echo directly.
+					echo $icon; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
+					echo esc_html( $label );
+					?>
 				</span>
 			<?php endforeach; ?>
 		</div>
@@ -144,7 +246,9 @@ while ( have_posts() ) :
 	<!-- ═══════════════════════════════════════ 6. EXPERT TIP ═══ -->
 	<?php if ( $expert_tip ) : ?>
 		<div class="expert-tip" role="note">
-			<span class="expert-tip__icon" aria-hidden="true">💡</span>
+			<span class="expert-tip__icon" aria-hidden="true">
+				<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+			</span>
 			<p><?php echo esc_html( $expert_tip ); ?></p>
 		</div>
 	<?php endif; ?>
