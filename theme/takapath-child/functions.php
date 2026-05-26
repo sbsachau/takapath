@@ -20,12 +20,14 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
+define( 'TAKAPATH_VERSION', wp_get_theme()->get( 'Version' ) );
+
 // =============================================================================
 // ENQUEUE STYLESHEETS
 // =============================================================================
 add_action( 'wp_enqueue_scripts', function () {
 
-	$child_version = wp_get_theme()->get( 'Version' );
+	$v = TAKAPATH_VERSION;
 
 	// 1. Parent theme (GeneratePress)
 	wp_enqueue_style(
@@ -37,49 +39,79 @@ add_action( 'wp_enqueue_scripts', function () {
 
 	// 2. TakaPath child — global design tokens + brand styles
 	wp_enqueue_style(
-		'takapath-child-style',
+		'takapath-child',
 		get_stylesheet_uri(),
 		[ 'generatepress-style' ],
-		$child_version
+		$v
 	);
 
-	// 3. Homepage extra — steps, bilingual block, stats strip, footer CTA
+	// 3. Header + footer styles — always loaded (sitewide chrome)
+	wp_enqueue_style(
+		'takapath-header-footer',
+		get_stylesheet_directory_uri() . '/header-footer.css',
+		[ 'takapath-child' ],
+		$v
+	);
+
+	// 4. Homepage extra — steps, bilingual block, stats strip, footer CTA
 	if ( is_front_page() || is_home() ) {
 		wp_enqueue_style(
 			'takapath-home-extra',
 			get_stylesheet_directory_uri() . '/home-extra.css',
-			[ 'takapath-child-style' ],
-			$child_version
+			[ 'takapath-header-footer' ],
+			$v
 		);
 	}
 
-	// 4. Corridor page extra — intro, comparison table, receive-method pills, FAQ
+	// 5. Corridor page extra — intro, comparison table, receive-method pills, FAQ
 	if ( is_singular( 'corridor' ) ) {
 		wp_enqueue_style(
 			'takapath-corridor-extra',
 			get_stylesheet_directory_uri() . '/corridor-extra.css',
-			[ 'takapath-child-style' ],
-			$child_version
+			[ 'takapath-header-footer' ],
+			$v
 		);
 	}
 
-	// 5. Archive (corridor listing) extra — breadcrumb, filter bar, pagination
+	// 6. Archive (corridor listing) extra — breadcrumb, filter bar, pagination
 	if ( is_post_type_archive( 'corridor' ) ) {
 		wp_enqueue_style(
 			'takapath-archive-extra',
 			get_stylesheet_directory_uri() . '/archive-extra.css',
-			[ 'takapath-child-style' ],
-			$child_version
+			[ 'takapath-header-footer' ],
+			$v
 		);
 	}
+
+	// 7. Guide pages (bKash, Nagad, exchange-rate guides)
+	if ( is_page() ) {
+		$slug = get_post_field( 'post_name', get_the_ID() );
+		$guide_slugs = [
+			'bkash-receive-money-abroad',
+			'nagad-international-transfer',
+			'gbp-bdt-exchange-rate',
+			'usd-bdt-exchange-rate',
+			'sar-bdt-exchange-rate',
+		];
+		if ( in_array( $slug, $guide_slugs, true ) ) {
+			wp_enqueue_style(
+				'takapath-guide',
+				get_stylesheet_directory_uri() . '/guide.css',
+				[ 'takapath-header-footer' ],
+				$v
+			);
+		}
+	}
+
 } );
 
 
 // =============================================================================
-// PAGE TEMPLATE — "TakaPath Homepage"
+// PAGE TEMPLATES
 // =============================================================================
 add_filter( 'theme_page_templates', function ( array $templates ): array {
-	$templates['page-home.php'] = __( 'TakaPath Homepage', 'takapath-child' );
+	$templates['page-home.php']  = __( 'TakaPath Homepage', 'takapath' );
+	$templates['page-guide.php'] = __( 'TakaPath Guide Page', 'takapath' );
 	return $templates;
 } );
 
@@ -88,10 +120,11 @@ add_filter( 'template_include', function ( string $template ): string {
 		return $template;
 	}
 	$page_template = (string) get_post_meta( get_the_ID(), '_wp_page_template', true );
-	if ( 'page-home.php' !== $page_template ) {
+	$candidates    = [ 'page-home.php', 'page-guide.php' ];
+	if ( ! in_array( $page_template, $candidates, true ) ) {
 		return $template;
 	}
-	$custom = get_stylesheet_directory() . '/page-home.php';
+	$custom = get_stylesheet_directory() . '/' . $page_template;
 	return file_exists( $custom ) ? $custom : $template;
 } );
 
@@ -99,9 +132,10 @@ add_filter( 'template_include', function ( string $template ): string {
 // =============================================================================
 // ACF FIELD GROUPS — load from version-controlled PHP export
 // =============================================================================
-// acf/include_fields fires after ACF is fully loaded, before fields are used.
-// Path: theme/takapath-child/ → repo root → config/acf-field-groups.php
 add_action( 'acf/include_fields', function () {
+	if ( ! function_exists( 'get_field' ) ) {
+		return;
+	}
 	$field_file = get_stylesheet_directory() . '/../../config/acf-field-groups.php';
 	if ( file_exists( $field_file ) ) {
 		require_once $field_file;
@@ -110,11 +144,10 @@ add_action( 'acf/include_fields', function () {
 
 
 // =============================================================================
-// RANK MATH SEO — per-corridor title / meta / canonical overrides
+// RANK MATH SEO — per-corridor title / meta overrides
 // =============================================================================
-// Field names match config/acf-field-groups.php exactly.
 add_filter( 'rank_math/title', function ( string $title ): string {
-	if ( ! is_singular( 'corridor' ) ) {
+	if ( ! is_singular( 'corridor' ) || ! function_exists( 'get_field' ) ) {
 		return $title;
 	}
 	$override = (string) get_field( 'seo_title_override' );
@@ -122,15 +155,12 @@ add_filter( 'rank_math/title', function ( string $title ): string {
 } );
 
 add_filter( 'rank_math/description', function ( string $desc ): string {
-	if ( ! is_singular( 'corridor' ) ) {
+	if ( ! is_singular( 'corridor' ) || ! function_exists( 'get_field' ) ) {
 		return $desc;
 	}
 	$override = (string) get_field( 'seo_meta_override' );
 	return $override !== '' ? $override : $desc;
 } );
-
-// No canonical_url ACF field — Rank Math handles canonical automatically.
-// Add a filter here only if a per-corridor override field is added later.
 
 
 // =============================================================================
@@ -141,12 +171,12 @@ add_action( 'init', function () {
 		return;
 	}
 	$strings = [
-		'site-tagline' => 'Compare the best ways to send money to Bangladesh',
-		'hero-heading' => 'Best Way to Send Money to Bangladesh — Compare Rates & Fees',
-		'trust-rates'  => 'Rates updated every hour',
-		'trust-fees'   => 'No hidden fees',
-		'trust-independent' => 'Independent — not owned by any provider',
-		'trust-methods'     => 'bKash, Nagad & bank deposit covered',
+		'site-tagline'       => 'Compare the best ways to send money to Bangladesh',
+		'hero-heading'       => 'Best Way to Send Money to Bangladesh — Compare Rates & Fees',
+		'trust-rates'        => 'Rates updated every hour',
+		'trust-fees'         => 'No hidden fees',
+		'trust-independent'  => 'Independent — not owned by any provider',
+		'trust-methods'      => 'bKash, Nagad & bank deposit covered',
 	];
 	foreach ( $strings as $name => $value ) {
 		pll_register_string( $name, $value, 'TakaPath' );
@@ -159,7 +189,7 @@ add_action( 'init', function () {
 // =============================================================================
 add_action( 'wp_head', function () {
 	if ( function_exists( 'pll_the_languages' ) ) {
-		return; // Polylang handles hreflang
+		return;
 	}
 	$base = esc_url( home_url() );
 	echo '<link rel="alternate" hreflang="en" href="' . $base . '" />' . "\n";
@@ -174,24 +204,23 @@ add_action( 'wp_head', function () {
 add_action( 'init', function () {
 	register_post_type( 'corridor', [
 		'labels' => [
-			'name'               => __( 'Corridor Guides', 'takapath-child' ),
-			'singular_name'      => __( 'Corridor Guide', 'takapath-child' ),
-			'add_new_item'       => __( 'Add New Corridor', 'takapath-child' ),
-			'edit_item'          => __( 'Edit Corridor', 'takapath-child' ),
-			'view_item'          => __( 'View Corridor', 'takapath-child' ),
-			'all_items'          => __( 'All Corridors', 'takapath-child' ),
-			'search_items'       => __( 'Search Corridors', 'takapath-child' ),
-			'not_found'          => __( 'No corridors found.', 'takapath-child' ),
-			'not_found_in_trash' => __( 'No corridors found in Trash.', 'takapath-child' ),
+			'name'               => __( 'Corridor Guides', 'takapath' ),
+			'singular_name'      => __( 'Corridor Guide', 'takapath' ),
+			'add_new_item'       => __( 'Add New Corridor', 'takapath' ),
+			'edit_item'          => __( 'Edit Corridor', 'takapath' ),
+			'view_item'          => __( 'View Corridor', 'takapath' ),
+			'all_items'          => __( 'All Corridors', 'takapath' ),
+			'search_items'       => __( 'Search Corridors', 'takapath' ),
+			'not_found'          => __( 'No corridors found.', 'takapath' ),
+			'not_found_in_trash' => __( 'No corridors found in Trash.', 'takapath' ),
 		],
-		'public'       => true,
-		'has_archive'  => true,
-		'rewrite'      => [ 'slug' => 'send-money-to-bangladesh', 'with_front' => false ],
-		'show_in_rest' => true,
-		'menu_icon'    => 'dashicons-airplane',
-		'menu_position'=> 5,
-		'supports'     => [ 'title', 'editor', 'excerpt', 'thumbnail', 'custom-fields', 'page-attributes' ],
-		// page-attributes enables the Order field in WP Admin → used by homepage corridor grid
+		'public'        => true,
+		'has_archive'   => true,
+		'rewrite'       => [ 'slug' => 'send-money-to-bangladesh', 'with_front' => false ],
+		'show_in_rest'  => true,
+		'menu_icon'     => 'dashicons-airplane',
+		'menu_position' => 5,
+		'supports'      => [ 'title', 'editor', 'excerpt', 'thumbnail', 'custom-fields', 'page-attributes' ],
 	] );
 } );
 
@@ -199,27 +228,26 @@ add_action( 'init', function () {
 // =============================================================================
 // STRUCTURED DATA — BreadcrumbList + FAQPage (corridor pages)
 // =============================================================================
-// Emitted in <head> via wp_head. Single corridor pages only.
-// WebSite schema for the homepage is emitted directly in page-home.php.
 add_action( 'wp_head', function () {
 	if ( ! is_singular( 'corridor' ) ) {
 		return;
 	}
 
-	// BreadcrumbList
 	$breadcrumb = [
 		'@context'        => 'https://schema.org',
 		'@type'           => 'BreadcrumbList',
 		'itemListElement' => [
-			[ '@type' => 'ListItem', 'position' => 1, 'name' => __( 'Home', 'takapath-child' ), 'item' => home_url( '/' ) ],
-			[ '@type' => 'ListItem', 'position' => 2, 'name' => __( 'Send Money to Bangladesh', 'takapath-child' ), 'item' => home_url( '/send-money-to-bangladesh/' ) ],
+			[ '@type' => 'ListItem', 'position' => 1, 'name' => __( 'Home', 'takapath' ), 'item' => home_url( '/' ) ],
+			[ '@type' => 'ListItem', 'position' => 2, 'name' => __( 'Send Money to Bangladesh', 'takapath' ), 'item' => home_url( '/send-money-to-bangladesh/' ) ],
 			[ '@type' => 'ListItem', 'position' => 3, 'name' => get_the_title(), 'item' => get_permalink() ],
 		],
 	];
 	echo '<script type="application/ld+json">' . wp_json_encode( $breadcrumb, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES ) . '</script>' . "\n";
 
-	// FAQPage — only when faq_items ACF field has entries
-	$faq_items = function_exists( 'get_field' ) ? get_field( 'faq_items' ) : null;
+	if ( ! function_exists( 'get_field' ) ) {
+		return;
+	}
+	$faq_items = get_field( 'faq_items' );
 	if ( ! empty( $faq_items ) && is_array( $faq_items ) ) {
 		$entities = [];
 		foreach ( $faq_items as $item ) {
@@ -235,29 +263,47 @@ add_action( 'wp_head', function () {
 			];
 		}
 		if ( ! empty( $entities ) ) {
-			$faq_schema = [
+			$schema = [
 				'@context'   => 'https://schema.org',
 				'@type'      => 'FAQPage',
 				'mainEntity' => $entities,
 			];
-			echo '<script type="application/ld+json">' . wp_json_encode( $faq_schema, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES ) . '</script>' . "\n";
+			echo '<script type="application/ld+json">' . wp_json_encode( $schema, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES ) . '</script>' . "\n";
 		}
 	}
-}, 5 ); // Priority 5 — fires before default wp_head output at 10
+}, 5 );
+
+
+// =============================================================================
+// STRUCTURED DATA — HowTo / Article schema for guide pages
+// =============================================================================
+add_action( 'wp_head', function () {
+	if ( ! is_page() ) {
+		return;
+	}
+	$slug = get_post_field( 'post_name', get_the_ID() );
+	if ( $slug !== 'bkash-receive-money-abroad' ) {
+		return;
+	}
+	$schema = [
+		'@context'    => 'https://schema.org',
+		'@type'       => 'HowTo',
+		'name'        => 'How to Receive Money on bKash from Abroad',
+		'description' => 'Step-by-step guide to receiving international remittances directly into your bKash account in Bangladesh.',
+		'step'        => [
+			[ '@type' => 'HowToStep', 'position' => '1', 'name' => 'Choose a supported provider', 'text' => 'Select a money transfer provider that supports bKash HomeSend, such as Remitly, Western Union, or MoneyGram.' ],
+			[ '@type' => 'HowToStep', 'position' => '2', 'name' => 'Enter your bKash number', 'text' => 'When prompted for a delivery method, choose bKash and enter the recipient\'s 11-digit bKash mobile number registered in Bangladesh.' ],
+			[ '@type' => 'HowToStep', 'position' => '3', 'name' => 'Confirm and send', 'text' => 'Review the exchange rate and fees, then confirm the transfer. The recipient will receive a bKash notification within minutes.' ],
+			[ '@type' => 'HowToStep', 'position' => '4', 'name' => 'Recipient withdraws or uses funds', 'text' => 'The recipient can use the funds directly from bKash for payments, or withdraw cash at a bKash agent point.' ],
+		],
+	];
+	echo '<script type="application/ld+json">' . wp_json_encode( $schema, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES ) . '</script>' . "\n";
+}, 5 );
 
 
 // =============================================================================
 // HELPER — build the [takapath_rates] shortcode string for a corridor post
 // =============================================================================
-/**
- * Returns a ready-to-use shortcode string for the given corridor post.
- *
- * Usage in templates:
- *   echo do_shortcode( takapath_corridor_shortcode() );
- *
- * @param int $post_id  Optional. Defaults to current post in the loop.
- * @return string       e.g. [takapath_rates from="GBP" amount="500" selector="yes"]
- */
 function takapath_corridor_shortcode( int $post_id = 0 ): string {
 	if ( $post_id === 0 ) {
 		$post_id = (int) get_the_ID();
