@@ -112,8 +112,8 @@ acf_add_local_field_group( [
 			'label'         => 'Hero Stat (optional)',
 			'name'          => 'hero_stat',
 			'type'          => 'text',
-			'instructions'  => 'A single key stat shown in the hero, e.g. "£3.5B sent annually"',
-			'placeholder'   => '£3.5B sent from UK annually',
+			'instructions'  => 'A single key stat shown in the hero, e.g. "3.5B sent annually"',
+			'placeholder'   => '3.5B sent from UK annually',
 		],
 
 		// ── Receive method highlights ─────────────────────────────────────────
@@ -142,7 +142,7 @@ acf_add_local_field_group( [
 			'name'          => 'seo_h1',
 			'type'          => 'text',
 			'instructions'  => 'Optional. If set, replaces the post title as the visible H1. Leave blank to use post title.',
-			'placeholder'   => 'Send Money from UK to Bangladesh — Best GBP to BDT Rates',
+			'placeholder'   => 'Send Money from UK to Bangladesh -- Best GBP to BDT Rates',
 			'maxlength'     => 100,
 		],
 
@@ -280,7 +280,7 @@ acf_add_local_field_group( [
 			'label'         => 'Hero Heading',
 			'name'          => 'hero_heading',
 			'type'          => 'text',
-			'default_value' => 'Best Way to Send Money to Bangladesh — Compare Rates & Fees',
+			'default_value' => 'Best Way to Send Money to Bangladesh -- Compare Rates & Fees',
 			'maxlength'     => 120,
 		],
 
@@ -289,7 +289,7 @@ acf_add_local_field_group( [
 			'label'         => 'Hero Tagline',
 			'name'          => 'hero_tagline',
 			'type'          => 'text',
-			'default_value' => 'Trusted comparison for Bangladeshis worldwide. Updated rates from real providers — bank deposit, bKash, and cash pickup.',
+			'default_value' => 'Trusted comparison for Bangladeshis worldwide. Updated rates from real providers -- bank deposit, bKash, and cash pickup.',
 			'maxlength'     => 200,
 		],
 
@@ -300,12 +300,12 @@ acf_add_local_field_group( [
 			'type'          => 'select',
 			'instructions'  => 'The currency pre-selected in the homepage rate comparison widget.',
 			'choices'       => [
-				'GBP' => 'GBP — British Pound',
-				'USD' => 'USD — US Dollar',
-				'EUR' => 'EUR — Euro',
-				'SAR' => 'SAR — Saudi Riyal',
-				'AED' => 'AED — UAE Dirham',
-				'MYR' => 'MYR — Malaysian Ringgit',
+				'GBP' => 'GBP -- British Pound',
+				'USD' => 'USD -- US Dollar',
+				'EUR' => 'EUR -- Euro',
+				'SAR' => 'SAR -- Saudi Riyal',
+				'AED' => 'AED -- UAE Dirham',
+				'MYR' => 'MYR -- Malaysian Ringgit',
 			],
 			'default_value' => 'GBP',
 			'ui'            => 1,
@@ -347,7 +347,7 @@ acf_add_local_field_group( [
 			'name'          => 'announcement',
 			'type'          => 'text',
 			'instructions'  => 'Optional single-line announcement shown at the top of the homepage. Leave blank to hide.',
-			'placeholder'   => '🎉 Bangladesh remittances hit a record $33B in 2025',
+			'placeholder'   => 'Bangladesh remittances hit a record $33B in 2025',
 		],
 
 	],
@@ -393,7 +393,7 @@ if ( function_exists( 'acf_add_options_page' ) ) {
 				'name'          => 'global_disclaimer',
 				'type'          => 'textarea',
 				'rows'          => 3,
-				'default_value' => 'Rates shown are indicative and updated hourly. Actual rates may vary. Always confirm the final rate on the provider's website before sending.',
+				'default_value' => 'Rates shown are indicative and updated hourly. Actual rates may vary. Always confirm the final rate on the provider\'s website before sending.',
 			],
 
 			[
@@ -402,7 +402,7 @@ if ( function_exists( 'acf_add_options_page' ) ) {
 				'name'          => 'affiliate_disclosure',
 				'type'          => 'textarea',
 				'rows'          => 2,
-				'default_value' => 'TakaPath may earn a commission when you use links on this site. This does not affect our comparisons — we always show all available providers.',
+				'default_value' => 'TakaPath may earn a commission when you use links on this site. This does not affect our comparisons -- we always show all available providers.',
 			],
 
 			[
