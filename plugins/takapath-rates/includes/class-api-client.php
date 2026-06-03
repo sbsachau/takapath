@@ -1,14 +1,10 @@
 <?php
 /**
- * API Client for TakaPath Rates plugin.
+ * API Client — fetches rate data from TransferSmartly.
  *
- * Single responsibility: fetch comparison results from the TransferSmartly
- * /api/compare endpoint, cache them as WordPress transients, and return a
- * normalised array that the rest of the plugin can consume without knowing
- * anything about the upstream API shape.
- *
- * Source of truth: TransferSmartly (transfersmartly.com)
- * TakaPath never stores or manages rates — it only reads and caches them.
+ * Results are cached as WordPress transients (default: 3600s).
+ * In local development (WP_ENVIRONMENT_TYPE === 'local' or TAKAPATH_USE_MOCK_DATA === true),
+ * a static mock dataset is returned so LocalWP works without hitting the live API.
  */
 
 declare( strict_types=1 );
@@ -21,251 +17,274 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 final class API_Client {
 
-	/**
-	 * How long to keep a cached result (seconds).
-	 * Overridable via TAKAPATH_CACHE_TTL constant in wp-config.php.
-	 */
-	private const DEFAULT_TTL = 3600; // 1 hour
+	/** Transient key prefix. */
+	private const CACHE_PREFIX = 'takapath_rates_';
+
+	/** Default cache lifetime in seconds. */
+	private const DEFAULT_TTL = 3600;
 
 	/**
-	 * Transient key prefix — kept short to stay under the 172-char WP limit.
-	 */
-	private const CACHE_PREFIX = 'tkp_rates_';
-
-	/**
-	 * Maximum age of stale cache we are willing to serve as a fallback
-	 * when the upstream API is unreachable (seconds).
-	 */
-	private const STALE_TTL = 86400; // 24 hours
-
-	/**
-	 * Fetch comparison results for a given currency pair.
+	 * Fetch (or return cached) rates for a given source currency + amount.
 	 *
-	 * @param string $from_currency  ISO 4217 source currency, e.g. "GBP".
-	 * @param int    $amount         Send amount in the source currency.
-	 * @param bool   $force_refresh  Bypass cache and fetch fresh data.
+	 * Returns:
+	 *   [
+	 *     'success' => bool,
+	 *     'source'  => 'live' | 'cache' | 'stale' | 'mock',
+	 *     'data'    => [ ...normalised rows ],
+	 *   ]
 	 *
-	 * @return array{
-	 *   success: bool,
-	 *   source:  'api'|'cache'|'stale'|'error',
-	 *   data:    array<int, array{
-	 *     provider:      string,
-	 *     provider_logo: string,
-	 *     exchange_rate: float,
-	 *     fee:           float,
-	 *     recipient_gets:float,
-	 *     transfer_speed:string,
-	 *     receive_methods:string[],
-	 *     transfer_url:  string,
-	 *   }>,
-	 *   error:   string,
-	 *   fetched_at: int,
-	 * }
+	 * @param string $from   Source currency ISO 4217.
+	 * @param int    $amount Amount to send.
+	 * @return array
 	 */
-	public static function get_rates(
-		string $from_currency,
-		int $amount = 1000,
-		bool $force_refresh = false
-	): array {
-		$from_currency = strtoupper( trim( $from_currency ) );
-		$cache_key     = self::CACHE_PREFIX . $from_currency . '_' . $amount;
-		$stale_key     = $cache_key . '_stale';
+	public static function get_rates( string $from, int $amount ): array {
 
-		// --- Serve from live cache unless force-refresh requested ---
-		if ( ! $force_refresh ) {
-			$cached = get_transient( $cache_key );
-			if ( false !== $cached && is_array( $cached ) ) {
-				$cached['source'] = 'cache';
-				return $cached;
-			}
+		// ── Local-dev mock bypass ─────────────────────────────────────────────
+		if ( self::is_local_dev() ) {
+			return [
+				'success' => true,
+				'source'  => 'mock',
+				'data'    => self::mock_rates( $from, $amount ),
+			];
 		}
 
-		// --- Fetch from TransferSmartly ---
-		$result = self::fetch_from_api( $from_currency, $amount );
+		// ── Transient cache ───────────────────────────────────────────────────
+		$cache_key = self::CACHE_PREFIX . strtolower( $from ) . '_' . $amount;
+		$cached    = get_transient( $cache_key );
 
-		if ( $result['success'] ) {
-			// Store live cache.
-			set_transient( $cache_key, $result, self::get_ttl() );
-			// Also keep a stale copy with a much longer TTL as fallback.
-			set_transient( $stale_key, $result, self::STALE_TTL );
-			return $result;
+		if ( false !== $cached && is_array( $cached ) ) {
+			return [
+				'success' => true,
+				'source'  => 'cache',
+				'data'    => $cached,
+			];
 		}
 
-		// --- API failed: try stale cache before giving up ---
-		$stale = get_transient( $stale_key );
-		if ( false !== $stale && is_array( $stale ) ) {
-			$stale['source'] = 'stale';
-			return $stale;
-		}
-
-		// Nothing available — return the error result.
-		return $result;
-	}
-
-	/**
-	 * Clear all cached rate transients for a specific currency,
-	 * or all currencies if none is specified.
-	 *
-	 * @param string|null $from_currency  Specific currency, or null for all.
-	 */
-	public static function clear_cache( ?string $from_currency = null ): void {
-		global $wpdb;
-
-		if ( $from_currency ) {
-			$key = self::CACHE_PREFIX . strtoupper( $from_currency );
-			// Delete all transients whose option_name starts with _transient_{key}.
-			$wpdb->query(
-				$wpdb->prepare(
-					"DELETE FROM {$wpdb->options} WHERE option_name LIKE %s OR option_name LIKE %s",
-					'_transient_' . $wpdb->esc_like( $key ) . '%',
-					'_transient_timeout_' . $wpdb->esc_like( $key ) . '%'
-				)
-			);
-		} else {
-			$prefix = self::CACHE_PREFIX;
-			$wpdb->query(
-				$wpdb->prepare(
-					"DELETE FROM {$wpdb->options} WHERE option_name LIKE %s OR option_name LIKE %s",
-					'_transient_' . $wpdb->esc_like( $prefix ) . '%',
-					'_transient_timeout_' . $wpdb->esc_like( $prefix ) . '%'
-				)
-			);
-		}
-	}
-
-	// -------------------------------------------------------------------------
-	// Private helpers
-	// -------------------------------------------------------------------------
-
-	/**
-	 * Make the actual HTTP request to TransferSmartly.
-	 */
-	private static function fetch_from_api( string $from_currency, int $amount ): array {
-		$base_url = defined( 'TAKAPATH_API_BASE_URL' )
-			? rtrim( TAKAPATH_API_BASE_URL, '/' )
-			: 'https://transfersmartly.com';
+		// ── Live API call ─────────────────────────────────────────────────────
+		$api_base = defined( 'TAKAPATH_API_BASE' ) ? TAKAPATH_API_BASE : 'https://transfersmartly.com';
+		$ttl      = defined( 'TAKAPATH_CACHE_TTL' ) ? (int) TAKAPATH_CACHE_TTL : self::DEFAULT_TTL;
 
 		$url = add_query_arg(
 			[
-				'fromCurrency' => $from_currency,
+				'fromCurrency' => rawurlencode( $from ),
 				'toCurrency'   => 'BDT',
 				'toCountry'    => 'BD',
-				'amount'       => $amount,
+				'sendAmount'   => $amount,
 			],
-			$base_url . '/api/compare'
+			trailingslashit( $api_base ) . 'api/compare'
 		);
 
 		$response = wp_remote_get( $url, [
-			'timeout'    => 10,
-			'user-agent' => 'TakaPath/' . TAKAPATH_RATES_VERSION . ' (+https://takapath.com)',
+			'timeout'    => 8,
+			'user-agent' => 'TakaPath-Plugin/1.0 (+https://takapath.com)',
 			'headers'    => [ 'Accept' => 'application/json' ],
 		] );
 
-		// Network-level failure.
+		// ── HTTP error — try stale transient then hard fail ───────────────────
 		if ( is_wp_error( $response ) ) {
-			return self::error_result(
-				'Network error: ' . $response->get_error_message()
-			);
+			$stale = get_option( self::CACHE_PREFIX . 'stale_' . strtolower( $from ) . '_' . $amount );
+			if ( $stale ) {
+				return [ 'success' => false, 'source' => 'stale', 'data' => $stale ];
+			}
+			return [ 'success' => false, 'source' => 'error', 'data' => [] ];
 		}
 
-		$status = wp_remote_retrieve_response_code( $response );
-		if ( 200 !== (int) $status ) {
-			return self::error_result(
-				sprintf( 'TransferSmartly returned HTTP %d', $status )
-			);
+		$code = wp_remote_retrieve_response_code( $response );
+		if ( 200 !== (int) $code ) {
+			$stale = get_option( self::CACHE_PREFIX . 'stale_' . strtolower( $from ) . '_' . $amount );
+			if ( $stale ) {
+				return [ 'success' => false, 'source' => 'stale', 'data' => $stale ];
+			}
+			return [ 'success' => false, 'source' => 'error', 'data' => [] ];
 		}
 
-		$body = wp_remote_retrieve_body( $response );
-		$json = json_decode( $body, true );
+		$body = json_decode( wp_remote_retrieve_body( $response ), true );
 
-		if ( JSON_ERROR_NONE !== json_last_error() || ! is_array( $json ) ) {
-			return self::error_result( 'Invalid JSON response from TransferSmartly' );
+		if ( ! is_array( $body ) ) {
+			return [ 'success' => false, 'source' => 'error', 'data' => [] ];
 		}
 
-		$normalised = self::normalise( $json );
+		$normalised = self::normalise( $body, $from, $amount );
 
-		if ( empty( $normalised ) ) {
-			return self::error_result( 'No provider results in API response' );
+		// Store fresh + stale fallback
+		set_transient( $cache_key, $normalised, $ttl );
+		update_option( self::CACHE_PREFIX . 'stale_' . strtolower( $from ) . '_' . $amount, $normalised, false );
+
+		return [ 'success' => true, 'source' => 'live', 'data' => $normalised ];
+	}
+
+	// ── Helpers ───────────────────────────────────────────────────────────────
+
+	/**
+	 * Detect local dev environment.
+	 * True when WP_ENVIRONMENT_TYPE is 'local' OR TAKAPATH_USE_MOCK_DATA constant is true.
+	 */
+	private static function is_local_dev(): bool {
+		if ( defined( 'TAKAPATH_USE_MOCK_DATA' ) && TAKAPATH_USE_MOCK_DATA ) {
+			return true;
 		}
-
-		return [
-			'success'    => true,
-			'source'     => 'api',
-			'data'       => $normalised,
-			'error'      => '',
-			'fetched_at' => time(),
-		];
+		if ( function_exists( 'wp_get_environment_type' ) ) {
+			return 'local' === wp_get_environment_type();
+		}
+		return false;
 	}
 
 	/**
-	 * Normalise the TransferSmartly response into a flat, typed array.
-	 * Insulates the rest of the plugin from upstream API shape changes.
+	 * Normalise the TransferSmartly /api/compare response array into a
+	 * flat list of rows the shortcode can iterate.
 	 *
-	 * TransferSmartly /api/compare returns an array of provider objects.
-	 * Each object shape (as of the MoneyRoutes codebase):
-	 *   { provider, exchangeRate, fee, recipientGets, transferTime,
-	 *     receiveMethods, transferUrl, logoUrl }
-	 *
-	 * @param array $raw  Decoded JSON from the API.
-	 * @return array      Normalised provider rows.
+	 * @param array  $body   Decoded JSON response.
+	 * @param string $from   Source currency.
+	 * @param int    $amount Send amount.
+	 * @return array
 	 */
-	private static function normalise( array $raw ): array {
-		// The API may return { results: [...] } or a bare array.
-		$rows = isset( $raw['results'] ) && is_array( $raw['results'] )
-			? $raw['results']
-			: $raw;
+	private static function normalise( array $body, string $from, int $amount ): array {
+		$rows   = $body['results'] ?? $body;
+		$output = [];
 
-		$out = [];
+		if ( ! is_array( $rows ) ) {
+			return [];
+		}
 
 		foreach ( $rows as $row ) {
 			if ( ! is_array( $row ) ) {
 				continue;
 			}
-
-			$out[] = [
-				'provider'       => sanitize_text_field( $row['provider'] ?? $row['name'] ?? '' ),
-				'provider_logo'  => esc_url_raw( $row['logoUrl'] ?? $row['logo'] ?? '' ),
-				'exchange_rate'  => (float) ( $row['exchangeRate'] ?? $row['exchange_rate'] ?? 0 ),
-				'fee'            => (float) ( $row['fee'] ?? 0 ),
-				'recipient_gets' => (float) ( $row['recipientGets'] ?? $row['recipient_gets'] ?? 0 ),
-				'transfer_speed' => sanitize_text_field( $row['transferTime'] ?? $row['transfer_speed'] ?? '' ),
-				'receive_methods'=> array_map(
-					'sanitize_text_field',
-					(array) ( $row['receiveMethods'] ?? $row['receive_methods'] ?? [] )
-				),
-				'transfer_url'   => esc_url_raw( $row['transferUrl'] ?? $row['transfer_url'] ?? '' ),
+			$rate          = (float) ( $row['exchangeRate'] ?? $row['exchange_rate'] ?? 0 );
+			$fee           = (float) ( $row['fee'] ?? $row['totalFee'] ?? 0 );
+			$recv          = (float) ( $row['recipientAmount'] ?? $row['recipient_gets'] ?? ( ( $amount - $fee ) * $rate ) );
+			$output[]      = [
+				'provider'        => (string) ( $row['provider'] ?? $row['providerName'] ?? '' ),
+				'provider_logo'   => (string) ( $row['providerLogo'] ?? $row['provider_logo'] ?? '' ),
+				'exchange_rate'   => $rate,
+				'fee'             => $fee,
+				'recipient_gets'  => $recv,
+				'transfer_speed'  => (string) ( $row['transferSpeed'] ?? $row['transfer_speed'] ?? '' ),
+				'receive_methods' => (array)  ( $row['receiveMethods'] ?? $row['receive_methods'] ?? [] ),
+				'transfer_url'    => (string) ( $row['transferUrl'] ?? $row['transfer_url'] ?? '' ),
 			];
 		}
 
-		// Sort by recipient_gets descending (best rate first).
-		usort( $out, static fn( $a, $b ) => $b['recipient_gets'] <=> $a['recipient_gets'] );
+		// Sort best rate first (highest recipient_gets).
+		usort( $output, fn( $a, $b ) => $b['recipient_gets'] <=> $a['recipient_gets'] );
 
-		return $out;
+		return $output;
 	}
 
 	/**
-	 * Build a standardised error result array.
+	 * Static mock data for local development.
+	 * Reflects realistic GBP→BDT rates as of mid-2026.
+	 * Other currencies scale proportionally.
+	 *
+	 * @param string $from   Source currency.
+	 * @param int    $amount Send amount.
+	 * @return array
 	 */
-	private static function error_result( string $message ): array {
-		// Log to WP debug log if WP_DEBUG_LOG is on.
-		if ( defined( 'WP_DEBUG_LOG' ) && WP_DEBUG_LOG ) {
-			// phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_error_log
-			error_log( '[TakaPath] API_Client error: ' . $message );
+	private static function mock_rates( string $from, int $amount ): array {
+		// Mid-market approximate rates to BDT (mid-2026 ballpark)
+		$mid_rates = [
+			'GBP' => 155.20,
+			'USD' => 122.80,
+			'EUR' => 132.40,
+			'SAR' => 32.70,
+			'AED' => 33.45,
+			'MYR' => 26.10,
+			'OMR' => 319.20,
+			'KWD' => 399.80,
+			'QAR' => 33.70,
+			'SGD' => 91.20,
+			'CAD' => 90.50,
+			'AUD' => 79.60,
+			'ITL' => 132.40,
+		];
+
+		$mid = $mid_rates[ $from ] ?? $mid_rates['GBP'];
+
+		// Each provider applies a markup % and a fixed fee.
+		$providers = [
+			[
+				'provider'       => 'Wise',
+				'markup'         => 0.0065,
+				'fee'            => 3.69,
+				'speed'          => 'Within hours',
+				'methods'        => [ 'bank_deposit', 'bkash' ],
+				'url'            => 'https://wise.com',
+			],
+			[
+				'provider'       => 'Remitly',
+				'markup'         => 0.010,
+				'fee'            => 0.00,
+				'speed'          => '3–5 minutes',
+				'methods'        => [ 'bank_deposit', 'bkash', 'cash_pickup' ],
+				'url'            => 'https://remitly.com',
+			],
+			[
+				'provider'       => 'Western Union',
+				'markup'         => 0.035,
+				'fee'            => 4.90,
+				'speed'          => 'Minutes',
+				'methods'        => [ 'bank_deposit', 'cash_pickup', 'home_delivery' ],
+				'url'            => 'https://westernunion.com',
+			],
+			[
+				'provider'       => 'Xoom (PayPal)',
+				'markup'         => 0.020,
+				'fee'            => 4.99,
+				'speed'          => 'Minutes',
+				'methods'        => [ 'bank_deposit', 'bkash' ],
+				'url'            => 'https://xoom.com',
+			],
+			[
+				'provider'       => 'Small World',
+				'markup'         => 0.025,
+				'fee'            => 2.99,
+				'speed'          => '1–2 business days',
+				'methods'        => [ 'bank_deposit', 'cash_pickup' ],
+				'url'            => 'https://smallworldfs.com',
+			],
+			[
+				'provider'       => 'MoneyGram',
+				'markup'         => 0.030,
+				'fee'            => 5.99,
+				'speed'          => 'Minutes',
+				'methods'        => [ 'bank_deposit', 'cash_pickup' ],
+				'url'            => 'https://moneygram.com',
+			],
+		];
+
+		$output = [];
+		foreach ( $providers as $p ) {
+			$rate  = $mid * ( 1 - $p['markup'] );
+			$recv  = ( $amount - $p['fee'] ) * $rate;
+			$output[] = [
+				'provider'       => $p['provider'],
+				'provider_logo'  => '',
+				'exchange_rate'  => round( $rate, 4 ),
+				'fee'            => $p['fee'],
+				'recipient_gets' => round( max( 0, $recv ), 2 ),
+				'transfer_speed' => $p['speed'],
+				'receive_methods'=> $p['methods'],
+				'transfer_url'   => $p['url'],
+			];
 		}
 
-		return [
-			'success'    => false,
-			'source'     => 'error',
-			'data'       => [],
-			'error'      => $message,
-			'fetched_at' => 0,
-		];
+		// Best rate first.
+		usort( $output, fn( $a, $b ) => $b['recipient_gets'] <=> $a['recipient_gets'] );
+
+		return $output;
 	}
 
 	/**
-	 * Get the configured cache TTL.
+	 * Clear all cached rates (called from Admin settings page).
 	 */
-	private static function get_ttl(): int {
-		return defined( 'TAKAPATH_CACHE_TTL' ) ? (int) TAKAPATH_CACHE_TTL : self::DEFAULT_TTL;
+	public static function clear_cache(): void {
+		global $wpdb;
+		$wpdb->query(
+			$wpdb->prepare(
+				"DELETE FROM {$wpdb->options} WHERE option_name LIKE %s OR option_name LIKE %s",
+				'_transient_' . self::CACHE_PREFIX . '%',
+				'_transient_timeout_' . self::CACHE_PREFIX . '%'
+			)
+		);
 	}
 }
